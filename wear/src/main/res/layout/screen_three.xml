@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/backGround0"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/mciLabel"
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:layout_above="@+id/progressBar"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:text="MCI"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="150dp"
+        android:layout_height="35dp"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true" />
+
+    <TextView
+        android:id="@+id/pointPercentage"
+        android:layout_width="50dp"
+        android:layout_height="35dp"
+        android:layout_below="@+id/mciLabel"
+        android:layout_centerHorizontal="true"
+        android:background="#00000000"
+        android:gravity="center"
+        android:text="  70%"
+        android:textSize="18sp" />
+
+</RelativeLayout>
