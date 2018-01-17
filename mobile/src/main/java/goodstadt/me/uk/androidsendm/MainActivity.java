@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Process;
@@ -20,14 +21,22 @@ import android.support.v7.widget.Toolbar;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,6 +59,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -63,10 +73,31 @@ public class MainActivity extends AppCompatActivity{
     GoogleApiClient mGoogleApiClient;
     // Bool to track whether the app is already resolving an error
     private boolean mResolvingError = false;
-    // Unique tag for the error dialog fragment
-    private static final String DIALOG_ERROR = "dialog_error";
-    // Request code to use when launching the resolution activity
-    private static final int REQUEST_RESOLVE_ERROR = 1001;
+
+    ArrayList<String> colors = new ArrayList<String>();
+    private int progressPoints = 100;
+    private ArrayAdapter<String> adapter;
+    private ArrayList<String> arrayList;
+    private int alertFlagRed = 0;
+    private int alertFlagYellow = 0;
+    private int alertFlagOrange = 0;
+    private int alertDescribeFlag = 0;
+    private int alertMissionFlag = 0;
+    private long[] vibrateMessageUpdate = {0, 50, 25, 50, 25, 50};
+    private long[] vibrateRed = {0, 500, 200, 500, 200, 500};
+    private long[] vibrateOrange = {0, 350, 150, 350};
+    private long[] vibrateYellow = {0, 200};
+    Chronometer timer;
+    private AlertDialog redAlert;
+    private AlertDialog yellowAlert;
+    private AlertDialog orangeAlert;
+    private AlertDialog describeAlert;
+    private AlertDialog missionAlert;
+    private String alertDescription;
+    private ArrayList<String> alertDescriptionBank = new ArrayList<String>();
+    private GestureDetector gdt;
+    private ListView list;
+
 
     //************************************************ Activemq Setting **************************************************
     CallbackConnection connection;
@@ -82,6 +113,115 @@ public class MainActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        final ProgressBar prg = (ProgressBar) findViewById(R.id.progressBar);
+        final TextView pointPercentage = (TextView) findViewById(R.id.mciScore);
+        pointPercentage.setText(progressPoints + "%");
+        prg.setMax(100);
+        prg.setProgress(progressPoints);
+        Drawable draw = getResources().getDrawable(R.drawable.progress_custom);
+        prg.setProgressDrawable(draw);
+        createMissionOverviewAlert("Mission:");
+
+        arrayList = new ArrayList<String>();
+        adapter = new ArrayAdapter<String>(getApplicationContext(),
+                android.R.layout.simple_list_item_1, arrayList) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View row = super.getView(position, convertView, parent);
+                TextView text = (TextView) row.findViewById(android.R.id.text1);
+
+                for (int i = 0; i < arrayList.size(); i++) {
+                    if (position == i) {
+                        row.setBackgroundColor(Color.parseColor(colors.get(i)));
+                    }
+                }
+
+                text.setTextSize(12);
+                text.setGravity(Gravity.CENTER);
+                text.setPadding(0,0,0,0);
+                text.setTextColor(Color.parseColor("#000000"));
+                return row;
+
+            }
+        };
+
+        timer = (Chronometer) findViewById(R.id.timer);
+        timer.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
+            @Override
+            public void onChronometerTick(Chronometer cArg) {
+                long time = SystemClock.elapsedRealtime() - cArg.getBase();
+                int h = (int) (time / 3600000);
+                int m = (int) (time - h * 3600000) / 60000;
+                int s = (int) (time - h * 3600000 - m * 60000) / 1000;
+                String hh = h < 10 ? "0" + h : h + "";
+                String mm = m < 10 ? "0" + m : m + "";
+                String ss = s < 10 ? "0" + s : s + "";
+                cArg.setText(hh + ":" + mm + ":" + ss);
+            }
+        });
+
+        gdt = new GestureDetector(new GestureDetector.OnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+
+                return true;
+            }
+
+            @Override
+            public void onShowPress(MotionEvent e) {
+
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                return false;
+            }
+
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                return false;
+            }
+
+            @Override
+            public void onLongPress(MotionEvent e) {
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                final int SWIPE_MIN_DISTANCE = 12;
+                final int SWIPE_THRESHOLD_VELOCITY = 20;
+                if (e2.getY() - e1.getY() > SWIPE_MIN_DISTANCE && Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+                    alertMissionFlag = 1;
+                    missionAlert.show();
+                    TextView textView = (TextView) missionAlert.findViewById(android.R.id.message);
+                    textView.setTextSize(20);
+                    textView.setTextColor(Color.parseColor("#000000"));
+                    textView.setHeight(300);
+                    textView.setWidth(300);
+                    textView.setBackgroundResource(R.drawable.textview_white);
+                    final Button positiveButton = missionAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                    LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                    posParams.weight = 1;
+                    posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                    posParams.height = 100;
+                    posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                    positiveButton.setGravity(Gravity.CENTER);
+                    positiveButton.setPadding(0,0,0,0);
+
+                }
+
+                return false;
+            }
+        });
+
+        View view = findViewById(R.id.background);
+        view.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                gdt.onTouchEvent(event);
+                return true;
+            }
+        });
 
         //***********************************************************MQTT******************************************
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -105,6 +245,8 @@ public class MainActivity extends AppCompatActivity{
 
                 try {
                     mqtt.setHost("tcp://" + input.getText().toString() + ":1883");
+                    timer.setBase(SystemClock.elapsedRealtime());
+                    timer.start();
 
                 } catch (URISyntaxException e) {
                     e.printStackTrace();
@@ -148,7 +290,6 @@ public class MainActivity extends AppCompatActivity{
 
                     // Once we connect..
                     public void onSuccess(Void v) {
-
                         // Subscribe to a topic
                         Topic[] topics = {new Topic("MCITOPIC", QoS.AT_LEAST_ONCE)};
                         connection.subscribe(topics, new Callback<byte[]>() {
@@ -160,7 +301,6 @@ public class MainActivity extends AppCompatActivity{
 
                             }
                         });
-
                     }
                 });
 
@@ -207,6 +347,203 @@ public class MainActivity extends AppCompatActivity{
                                         //map.put("request", "Message8fromPhoneLONGTEXT");
                                         map.put("counter", String.valueOf(counter));
                                         packageAndSendMessage(APP_ACTIVITY_PATH, map);
+
+                                        payloadContent = payloadContent.substring(7, payloadContent.length());
+                                        if (payloadContent.startsWith("(H)")) {
+
+                                            colors.add("#ff0000");
+                                            progressPoints -= 7;
+                                            arrayList.add("High Priority Alert\n(" + timer.getText() + ")");
+                                            adapter.notifyDataSetChanged();
+
+                                            Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+
+                                            redVib.vibrate(vibrateRed, -1);
+
+                                            final AlertDialog.Builder redAppAlert = new AlertDialog.Builder(MainActivity.this);
+                                            redAppAlert.setPositiveButton(
+                                                    "OK",
+                                                    new DialogInterface.OnClickListener() {
+                                                        public void onClick(DialogInterface dialog, int id) {
+                                                            alertFlagRed = 0;
+                                                            createAlertDescription();
+                                                        }
+                                                    });
+
+
+                                            redAlert = redAppAlert.create();
+                                            WindowManager.LayoutParams placement = redAlert.getWindow().getAttributes();
+                                            placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                                            redAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_red);
+
+                                            redAlert.setMessage("High Priority Alert Available\n(" + timer.getText() + ")");
+                                            alertFlagRed = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+
+                                            redAlert.setOnShowListener( new DialogInterface.OnShowListener() {
+                                                @Override
+                                                public void onShow(DialogInterface arg0) {
+                                                    redAlert.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE);
+                                                }
+                                            });
+
+                                            redAlert.show();
+                                            TextView textView = (TextView) redAlert.findViewById(android.R.id.message);
+                                            textView.setTextSize(20);
+                                            textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                                            textView.setHeight(300);
+                                            textView.setWidth(300);
+                                            textView.setBackgroundResource(R.drawable.textview_red);
+
+                                            final Button positiveButton = redAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                                            LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                                            posParams.weight = 1;
+                                            posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                                            posParams.height = 100;
+                                            posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                                            positiveButton.setGravity(Gravity.CENTER);
+                                            positiveButton.setPadding(0,0,0,0);
+
+                                            alertDescription = payloadContent.substring(3, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                        } else if (payloadContent.startsWith("(M)")) {
+                                            colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                            progressPoints -= 5;
+                                            arrayList.add("Medium Priority Alert\n(" + timer.getText() + ")");
+                                            adapter.notifyDataSetChanged();
+
+                                            Vibrator orangeVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                            orangeVib.vibrate(vibrateOrange, -1);
+
+                                            final AlertDialog.Builder orangeAppAlert = new AlertDialog.Builder(MainActivity.this);
+                                            orangeAppAlert.setPositiveButton(
+                                                    "OK",
+                                                    new DialogInterface.OnClickListener() {
+                                                        public void onClick(DialogInterface dialog, int id) {
+                                                            alertFlagOrange = 0;
+                                                            createAlertDescription();
+                                                        }
+                                                    });
+
+
+                                            orangeAlert = orangeAppAlert.create();
+                                            WindowManager.LayoutParams placement = orangeAlert.getWindow().getAttributes();
+                                            placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                                            orangeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_orange);
+
+                                            orangeAlert.setMessage("Medium Priority Alert Available\n(" + timer.getText() + ")");
+                                            alertFlagOrange = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+
+                                            orangeAlert.setOnShowListener( new DialogInterface.OnShowListener() {
+                                                @Override
+                                                public void onShow(DialogInterface arg0) {
+                                                        orangeAlert.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE);
+                                                }
+                                            });
+
+                                            orangeAlert.show();
+                                            TextView textView = (TextView) orangeAlert.findViewById(android.R.id.message);
+                                            textView.setTextSize(20);
+                                            textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                                            textView.setHeight(300);
+                                            textView.setWidth(300);
+                                            textView.setBackgroundResource(R.drawable.textview_orange);
+
+                                            final Button positiveButton = orangeAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                                            LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                                            posParams.weight = 1;
+                                            posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                                            posParams.height = 100;
+                                            posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                                            positiveButton.setGravity(Gravity.CENTER);
+                                            positiveButton.setPadding(0,0,0,0);
+
+                                            alertDescription = payloadContent.substring(3, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                        } else if (payloadContent.startsWith("(L)")) {
+                                            colors.add("#FFFF00");
+                                            progressPoints -= 3;
+                                            arrayList.add("Low Priority Alert\n(" + timer.getText() + ")");
+                                            adapter.notifyDataSetChanged();
+
+                                            Vibrator yellowVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                            yellowVib.vibrate(vibrateYellow, -1);
+
+
+                                            final AlertDialog.Builder yellowAppAlert = new AlertDialog.Builder(MainActivity.this);
+                                            yellowAppAlert.setPositiveButton(
+                                                    "OK",
+                                                    new DialogInterface.OnClickListener() {
+                                                        public void onClick(DialogInterface dialog, int id) {
+                                                            alertFlagYellow = 0;
+                                                            createAlertDescription();
+                                                        }
+                                                    });
+
+
+                                            yellowAlert = yellowAppAlert.create();
+                                            WindowManager.LayoutParams placement = yellowAlert.getWindow().getAttributes();
+                                            placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                                            yellowAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_yellow);
+
+                                            yellowAlert.setMessage("Low Priority Alert Available\n(" + timer.getText() + ")");
+                                            alertFlagYellow = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+
+                                            yellowAlert.setOnShowListener( new DialogInterface.OnShowListener() {
+                                                @Override
+                                                public void onShow(DialogInterface arg0) {
+                                                    yellowAlert.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.BLACK);
+                                                }
+                                            });
+
+                                            yellowAlert.show();
+
+                                            TextView textView = (TextView) yellowAlert.findViewById(android.R.id.message);
+                                            textView.setTextSize(20);
+                                            textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                                            textView.setHeight(300);
+                                            textView.setWidth(300);
+                                            textView.setBackgroundResource(R.drawable.textview_yellow);
+
+                                            final Button positiveButton = yellowAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                                            LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                                            posParams.weight = 1;
+                                            posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                                            posParams.height = 100;
+                                            posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                                            positiveButton.setGravity(Gravity.CENTER);
+                                            positiveButton.setPadding(0,0,0,0);
+
+                                            alertDescription = payloadContent.substring(3, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                        } else if (payloadContent.startsWith("(UM)")) {
+                                            alertDescription = payloadContent.substring(4, payloadContent.length());
+                                            createMissionOverviewAlert("Mission: " + alertDescription);
+                                            alertDescription = "MISSION UPDATED";
+                                            Vibrator yellowVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                            yellowVib.vibrate(vibrateMessageUpdate, -1);
+                                            createAlertDescription();
+                                        }
+                                        pointPercentage.setText(progressPoints + "%");
+                                        prg.setMax(100);
+                                        prg.setProgress(progressPoints);
+                                        Drawable draw = getResources().getDrawable(R.drawable.progress_custom);
+                                        prg.setProgressDrawable(draw);
+                                        list = (ListView) findViewById(R.id.listEvents);
+                                        list.setClickable(true);
+                                        list.setAdapter(adapter);
+                                        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                                alertDescription = alertDescriptionBank.get(position);                           //Display alert in alert array.
+                                                createAlertDescription();                                                        //Depends on which cell the user clicks on in notification list
+                                            }
+                                        });
+
                                     }
                                 } catch (Exception e) {
 
@@ -252,7 +589,6 @@ public class MainActivity extends AppCompatActivity{
 
         //************************************************ MQTT ************************************************
 
-
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                     @Override
@@ -281,6 +617,78 @@ public class MainActivity extends AppCompatActivity{
         IntentFilter messageFilter = new IntentFilter(Intent.ACTION_SEND);
         MessageReceiver messageReceiver = new MessageReceiver();
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, messageFilter);
+
+
+    }
+
+    public void createMissionOverviewAlert(String updatMessage) {
+        final AlertDialog.Builder alertMission = new AlertDialog.Builder(MainActivity.this);
+        alertMission.setPositiveButton(
+                "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                    }
+                });
+
+
+        missionAlert = alertMission.create();
+        WindowManager.LayoutParams placement = missionAlert.getWindow().getAttributes();
+        placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        placement.y = 100;   //y position
+
+        missionAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_white);
+        missionAlert.setMessage(updatMessage);
+
+    }
+
+    public void createAlertDescription() {
+        final AlertDialog.Builder alertDescripe = new AlertDialog.Builder(MainActivity.this);
+        alertDescripe.setPositiveButton(
+                "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        if(alertMissionFlag == 1){
+                            missionAlert.show();
+                            alertMissionFlag = 0;
+                        }
+                    }
+                });
+
+
+        describeAlert = alertDescripe.create();
+        WindowManager.LayoutParams placement = describeAlert.getWindow().getAttributes();
+        placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+        describeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_white);
+        describeAlert.setMessage(alertDescription);
+
+
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                describeAlert.show();
+
+                TextView textView = (TextView) describeAlert.findViewById(android.R.id.message);
+                textView.setTextSize(20);
+                textView.setTextColor(Color.parseColor("#000000"));
+                textView.setHeight(300);
+                textView.setWidth(300);
+                textView.setBackgroundResource(R.drawable.textview_white);
+
+                final Button positiveButton = describeAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                posParams.weight = 1;
+                posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                posParams.height = 100;
+                posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                positiveButton.setGravity(Gravity.CENTER);
+                positiveButton.setPadding(0,0,0,0);
+
+                alertDescribeFlag = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                handler.removeCallbacksAndMessages(null);
+            }
+        }, 200); //Need to delay as the same threshold is used to display two different types of alert messages
 
 
     }
@@ -326,7 +734,6 @@ public class MainActivity extends AppCompatActivity{
 
                         JSONObject mainObject = new JSONObject(s);
 
-
                         NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await(); //can use await(5, TimeUnit.SECONDS);
                         for (Node node : nodes.getNodes()) {
 
@@ -349,8 +756,7 @@ public class MainActivity extends AppCompatActivity{
 
                                 } else {
                                     // Log an error
-                                    Log.e(TAG, "PHONE Failed to connect to Google Api Client with status "
-                                            + sendMessageResult.getStatus());
+                                    Log.e(TAG, "PHONE Failed to connect to Google Api Client with status " + sendMessageResult.getStatus());
 
                                     runOnUiThread(new Runnable() {
                                         @Override
@@ -364,7 +770,6 @@ public class MainActivity extends AppCompatActivity{
                     } catch (JSONException ex) {
                         Log.e(TAG, ex.toString());
                     }
-
 
                 } catch (Exception ex) {
                     Log.e(TAG, ex.toString());
