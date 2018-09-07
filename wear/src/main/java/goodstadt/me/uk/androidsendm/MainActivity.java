@@ -517,11 +517,6 @@ public class MainActivity extends WearableActivity {
                 }
             });
 
-            if (timerSet == 0) {
-                timer.setBase(SystemClock.elapsedRealtime());
-                timer.start();
-                timerSet = 1;
-            }
 
 
             return v;
@@ -598,7 +593,12 @@ public class MainActivity extends WearableActivity {
                 String payloadContent = mainObject.getString("request");
                 payloadContent = payloadContent.substring(7, payloadContent.length());
 
-                if (payloadContent.startsWith("(RM)")) {
+                if (payloadContent.startsWith("(S)")) {
+
+                    timer.setBase(SystemClock.elapsedRealtime());
+                    timer.start();
+
+                } else if (payloadContent.startsWith("(RM)")) {
 
                     colors.add("#ff0000");
                     progressPoints -= 7;
@@ -643,7 +643,7 @@ public class MainActivity extends WearableActivity {
                     positiveButton.setGravity(Gravity.CENTER);
                     positiveButton.setPadding(0,0,0,0);
 
-                    alertDescription = payloadContent.substring(3, payloadContent.length());
+                    alertDescription = payloadContent.substring(4, payloadContent.length());
                     alertDescriptionBank.add(alertDescription);
 
                 } else if (payloadContent.startsWith("(L)")) {
@@ -834,7 +834,7 @@ public class MainActivity extends WearableActivity {
                     positiveButton.setGravity(Gravity.CENTER);
                     positiveButton.setPadding(0,0,0,0);
 
-                    alertDescription = payloadContent.substring(3, payloadContent.length());
+                    alertDescription = payloadContent.substring(5, payloadContent.length());
                     alertDescriptionBank.add(alertDescription);
 
                 } else if (payloadContent.startsWith("(HL)")) {
@@ -881,7 +881,7 @@ public class MainActivity extends WearableActivity {
                     positiveButton.setGravity(Gravity.CENTER);
                     positiveButton.setPadding(0,0,0,0);
 
-                    alertDescription = payloadContent.substring(3, payloadContent.length());
+                    alertDescription = payloadContent.substring(4, payloadContent.length());
                     alertDescriptionBank.add(alertDescription);
 
                 } else if (payloadContent.startsWith("(HG)")) {
@@ -929,7 +929,7 @@ public class MainActivity extends WearableActivity {
                     positiveButton.setGravity(Gravity.CENTER);
                     positiveButton.setPadding(0,0,0,0);
 
-                    alertDescription = payloadContent.substring(3, payloadContent.length());
+                    alertDescription = payloadContent.substring(4, payloadContent.length());
                     alertDescriptionBank.add(alertDescription);
 
                 } else if (payloadContent.startsWith("(HT)")) {
@@ -977,7 +977,198 @@ public class MainActivity extends WearableActivity {
                     positiveButton.setGravity(Gravity.CENTER);
                     positiveButton.setPadding(0,0,0,0);
 
+                    alertDescription = payloadContent.substring(4, payloadContent.length());
+                    alertDescriptionBank.add(alertDescription);
+
+                } else if (payloadContent.startsWith("(SRM)")) {  // Haptic and sound feedback
+
+                    colors.add("#ff0000");
+                    progressPoints -= 7;
+                    arrayList.add("High Priority Alert\n(" + timer.getText() + ")");
+                    adapter.notifyDataSetChanged();
+
+                    Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                    redVib.vibrate(vibrateRed, -1);
+
+                    final AlertDialog.Builder rmAppAlert = new AlertDialog.Builder(MainActivity.this);
+                    rmAppAlert.setPositiveButton(
+                            "OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    alertFlagRed = 0;
+                                }
+                            });
+
+
+                    rmAlert = rmAppAlert.create();
+                    WindowManager.LayoutParams placement = redAlert.getWindow().getAttributes();
+                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                    rmAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_red);
+
+                    rmAlert.setMessage("Resource Management Alert Available\n(" + timer.getText() + ")");
+                    alertFlagRm = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                    rmAlert.show();
+                    TextView textView = (TextView) rmAlert.findViewById(android.R.id.message);
+                    textView.setTextSize(20);
+                    textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                    textView.setHeight(300);
+                    textView.setWidth(300);
+                    textView.setBackgroundResource(R.drawable.textview_red);
+
+                    final Button positiveButton = rmAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                    LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                    posParams.weight = 1;
+                    posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                    posParams.height = 100;
+                    posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                    positiveButton.setGravity(Gravity.CENTER);
+                    positiveButton.setPadding(0,0,0,0);
+
+                    alertDescription = payloadContent.substring(5, payloadContent.length());
+                    alertDescriptionBank.add(alertDescription);
+
+                } else if (payloadContent.startsWith("(SL)")) {
+                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                    progressPoints -= 5;
+                    arrayList.add("Light Alert Available\n(" + timer.getText() + ")");
+                    adapter.notifyDataSetChanged();
+
+                    Vibrator orangeVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    orangeVib.vibrate(vibrateOrange, -1);
+
+                    final AlertDialog.Builder lAppAlert = new AlertDialog.Builder(MainActivity.this);
+                    lAppAlert.setPositiveButton(
+                            "OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    alertFlagL = 0;
+                                }
+                            });
+
+
+                    lAlert = lAppAlert.create();
+                    WindowManager.LayoutParams placement = lAlert.getWindow().getAttributes();
+                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                    lAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_orange);
+
+                    orangeAlert.setMessage("Light Alert Available\n(" + timer.getText() + ")");
+                    alertFlagL = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                    lAlert.show();
+                    TextView textView = (TextView) lAlert.findViewById(android.R.id.message);
+                    textView.setTextSize(20);
+                    textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                    textView.setHeight(300);
+                    textView.setWidth(300);
+                    textView.setBackgroundResource(R.drawable.textview_orange);
+
+                    final Button positiveButton = lAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                    LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                    posParams.weight = 1;
+                    posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                    posParams.height = 100;
+                    posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                    positiveButton.setGravity(Gravity.CENTER);
+                    positiveButton.setPadding(0,0,0,0);
+
                     alertDescription = payloadContent.substring(3, payloadContent.length());
+                    alertDescriptionBank.add(alertDescription);
+
+                } else if (payloadContent.startsWith("(SG)")) {
+                    colors.add("#FFFF00");
+                    progressPoints -= 3;
+                    arrayList.add("Gauge Alert\n(" + timer.getText() + ")");
+                    adapter.notifyDataSetChanged();
+
+                    Vibrator yellowVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    yellowVib.vibrate(vibrateYellow, -1);
+
+
+                    final AlertDialog.Builder gAppAlert = new AlertDialog.Builder(MainActivity.this);
+                    gAppAlert.setPositiveButton(
+                            "OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    alertFlagYellow = 0;
+                                }
+                            });
+
+
+                    gAlert = gAppAlert.create();
+                    WindowManager.LayoutParams placement = gAlert.getWindow().getAttributes();
+                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                    gAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_yellow);
+
+                    gAlert.setMessage("Gauge Alert Available\n(" + timer.getText() + ")");
+                    alertFlagG = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                    gAlert.show();
+                    TextView textView = (TextView) gAlert.findViewById(android.R.id.message);
+                    textView.setTextSize(20);
+                    textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                    textView.setHeight(300);
+                    textView.setWidth(300);
+                    textView.setBackgroundResource(R.drawable.textview_yellow);
+
+                    final Button positiveButton = gAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                    LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                    posParams.weight = 1;
+                    posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                    posParams.height = 100;
+                    posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                    positiveButton.setGravity(Gravity.CENTER);
+                    positiveButton.setPadding(0,0,0,0);
+
+                    alertDescription = payloadContent.substring(4, payloadContent.length());
+                    alertDescriptionBank.add(alertDescription);
+
+                } else if (payloadContent.startsWith("(ST)")) {
+                    colors.add("#FFFF00");
+                    progressPoints -= 3;
+                    arrayList.add("Tracking Alert\n(" + timer.getText() + ")");
+                    adapter.notifyDataSetChanged();
+
+                    Vibrator yellowVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    yellowVib.vibrate(vibrateYellow, -1);
+
+
+                    final AlertDialog.Builder tAppAlert = new AlertDialog.Builder(MainActivity.this);
+                    tAppAlert.setPositiveButton(
+                            "OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    alertFlagTracking = 0;
+                                }
+                            });
+
+
+                    tAlert = tAppAlert.create();
+                    WindowManager.LayoutParams placement = tAlert.getWindow().getAttributes();
+                    placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+                    tAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_yellow);
+
+                    tAlert.setMessage("Tracking Alert Available\n(" + timer.getText() + ")");
+                    alertFlagTracking = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
+                    tAlert.show();
+                    TextView textView = (TextView) tAlert.findViewById(android.R.id.message);
+                    textView.setTextSize(20);
+                    textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                    textView.setHeight(300);
+                    textView.setWidth(300);
+                    textView.setBackgroundResource(R.drawable.textview_yellow);
+
+                    final Button positiveButton = tAlert.getButton(AlertDialog.BUTTON_POSITIVE);
+                    LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
+                    posParams.weight = 1;
+                    posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+                    posParams.height = 100;
+                    posParams.gravity = Gravity.CENTER_HORIZONTAL;
+                    positiveButton.setGravity(Gravity.CENTER);
+                    positiveButton.setPadding(0, 0, 0, 0);
+
+                    alertDescription = payloadContent.substring(4, payloadContent.length());
                     alertDescriptionBank.add(alertDescription);
 
                 } else if (payloadContent.startsWith("(UM)")) {
