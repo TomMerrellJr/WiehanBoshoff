@@ -1,0 +1,5 @@
+Need to change the activity of the app
+    * Remove the pop-up alerts and only display them in the alert stack
+    * Last alert first if possible
+    * Only Need to display RM, L, G, or T to the operator without a message
+    * Remove item from list as responded to, or as time-out occurs
