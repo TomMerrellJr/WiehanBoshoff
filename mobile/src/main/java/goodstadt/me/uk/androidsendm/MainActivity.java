@@ -39,6 +39,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.media.MediaPlayer;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -78,19 +79,26 @@ public class MainActivity extends AppCompatActivity{
     private int progressPoints = 100;
     private ArrayAdapter<String> adapter;
     private ArrayList<String> arrayList;
-    private int alertFlagRed = 0;
-    private int alertFlagYellow = 0;
-    private int alertFlagOrange = 0;
+    // Convert the this for use with MATB
+    private int alertFlagRM = 0; // Resource Management flag
+    private int alertFlagL = 0; // Lights flag
+    private int alertFlagG = 0; // Gages flag
+    private int alertFlagT = 0; // Tracking flag
+    private int alertFlagC = 0; // Communications flag
     private int alertDescribeFlag = 0;
     private int alertMissionFlag = 0;
     private long[] vibrateMessageUpdate = {0, 50, 25, 50, 25, 50};
-    private long[] vibrateRed = {0, 500, 200, 500, 200, 500};
-    private long[] vibrateOrange = {0, 350, 150, 350};
-    private long[] vibrateYellow = {0, 200};
+    private long[] vibrateRM = {0, 500, 200, 500, 200, 500};
+    private long[] vibrateL = {0, 350, 150, 350};
+    private long[] vibrateG = {0, 200};
+    private long[] vibrateT = {0, 50, 25, 50};
+    private long[] vibrateC = {0, 500, 100, 300, 50, 150};
     Chronometer timer;
-    private AlertDialog redAlert;
-    private AlertDialog yellowAlert;
-    private AlertDialog orangeAlert;
+    private AlertDialog rmAlert;
+    private AlertDialog lAlert;
+    private AlertDialog gAlert;
+    private AlertDialog tAlert;
+    private AlertDialog cAlert;
     private AlertDialog describeAlert;
     private AlertDialog missionAlert;
     private String alertDescription;
@@ -113,13 +121,6 @@ public class MainActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        final ProgressBar prg = (ProgressBar) findViewById(R.id.progressBar);
-        final TextView pointPercentage = (TextView) findViewById(R.id.mciScore);
-        pointPercentage.setText(progressPoints + "%");
-        prg.setMax(100);
-        prg.setProgress(progressPoints);
-        Drawable draw = getResources().getDrawable(R.drawable.progress_custom);
-        prg.setProgressDrawable(draw);
         createMissionOverviewAlert("Mission:");
 
         arrayList = new ArrayList<String>();
@@ -132,11 +133,11 @@ public class MainActivity extends AppCompatActivity{
 
                 for (int i = 0; i < arrayList.size(); i++) {
                     if (position == i) {
-                        row.setBackgroundColor(Color.parseColor(colors.get(i)));
+                        row.setBackgroundColor(Color.parseColor("#DCDCDC"));
                     }
                 }
 
-                text.setTextSize(12);
+                text.setTextSize(50);
                 text.setGravity(Gravity.CENTER);
                 text.setPadding(0,0,0,0);
                 text.setTextColor(Color.parseColor("#000000"));
@@ -144,21 +145,6 @@ public class MainActivity extends AppCompatActivity{
 
             }
         };
-
-        timer = (Chronometer) findViewById(R.id.timer);
-        timer.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
-            @Override
-            public void onChronometerTick(Chronometer cArg) {
-                long time = SystemClock.elapsedRealtime() - cArg.getBase();
-                int h = (int) (time / 3600000);
-                int m = (int) (time - h * 3600000) / 60000;
-                int s = (int) (time - h * 3600000 - m * 60000) / 1000;
-                String hh = h < 10 ? "0" + h : h + "";
-                String mm = m < 10 ? "0" + m : m + "";
-                String ss = s < 10 ? "0" + s : s + "";
-                cArg.setText(hh + ":" + mm + ":" + ss);
-            }
-        });
 
         gdt = new GestureDetector(new GestureDetector.OnGestureListener() {
             @Override
@@ -245,8 +231,8 @@ public class MainActivity extends AppCompatActivity{
 
                 try {
                     mqtt.setHost("tcp://" + input.getText().toString() + ":1883");
-                    timer.setBase(SystemClock.elapsedRealtime());
-                    timer.start();
+                    //timer.setBase(SystemClock.elapsedRealtime());
+                    //timer.start();
 
                 } catch (URISyntaxException e) {
                     e.printStackTrace();
@@ -349,177 +335,756 @@ public class MainActivity extends AppCompatActivity{
                                         packageAndSendMessage(APP_ACTIVITY_PATH, map);
 
                                         payloadContent = payloadContent.substring(7, payloadContent.length());
-                                        if (payloadContent.startsWith("(H)")) {
+                                        if (payloadContent.startsWith("(S)")) {
 
-                                            colors.add("#ff0000");
-                                            progressPoints -= 7;
-                                            arrayList.add("High Priority Alert\n(" + timer.getText() + ")");
-                                            adapter.notifyDataSetChanged();
+                                            timer.setBase(SystemClock.elapsedRealtime());
+                                            timer.start();
 
-                                            Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                                        } else if (payloadContent.startsWith("(SRM)")) {
 
-                                            redVib.vibrate(vibrateRed, -1);
-
-                                            final AlertDialog.Builder redAppAlert = new AlertDialog.Builder(MainActivity.this);
-                                            redAppAlert.setPositiveButton(
-                                                    "OK",
-                                                    new DialogInterface.OnClickListener() {
-                                                        public void onClick(DialogInterface dialog, int id) {
-                                                            alertFlagRed = 0;
-                                                            createAlertDescription();
-                                                        }
-                                                    });
-
-
-                                            redAlert = redAppAlert.create();
-                                            WindowManager.LayoutParams placement = redAlert.getWindow().getAttributes();
-                                            placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-
-                                            redAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_red);
-
-                                            redAlert.setMessage("High Priority Alert Available\n(" + timer.getText() + ")");
-                                            alertFlagRed = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
-
-                                            redAlert.setOnShowListener( new DialogInterface.OnShowListener() {
-                                                @Override
-                                                public void onShow(DialogInterface arg0) {
-                                                    redAlert.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE);
-                                                }
-                                            });
-
-                                            redAlert.show();
-                                            TextView textView = (TextView) redAlert.findViewById(android.R.id.message);
-                                            textView.setTextSize(20);
-                                            textView.setGravity(Gravity.CENTER_HORIZONTAL);
-                                            textView.setHeight(300);
-                                            textView.setWidth(300);
-                                            textView.setBackgroundResource(R.drawable.textview_red);
-
-                                            final Button positiveButton = redAlert.getButton(AlertDialog.BUTTON_POSITIVE);
-                                            LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
-                                            posParams.weight = 1;
-                                            posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-                                            posParams.height = 100;
-                                            posParams.gravity = Gravity.CENTER_HORIZONTAL;
-                                            positiveButton.setGravity(Gravity.CENTER);
-                                            positiveButton.setPadding(0,0,0,0);
-
-                                            alertDescription = payloadContent.substring(3, payloadContent.length());
+                                            alertDescription = payloadContent.substring(5, payloadContent.length());
                                             alertDescriptionBank.add(alertDescription);
 
-                                        } else if (payloadContent.startsWith("(M)")) {
-                                            colors.add("#FF8C00"); // value used by getView in arrayAdapter
-                                            progressPoints -= 5;
-                                            arrayList.add("Medium Priority Alert\n(" + timer.getText() + ")");
-                                            adapter.notifyDataSetChanged();
+                                            if (alertDescription.contains("Attend")){
 
-                                            Vibrator orangeVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                                            orangeVib.vibrate(vibrateOrange, -1);
+                                                if (alertDescription.contains("Tank A")){
 
-                                            final AlertDialog.Builder orangeAppAlert = new AlertDialog.Builder(MainActivity.this);
-                                            orangeAppAlert.setPositiveButton(
-                                                    "OK",
-                                                    new DialogInterface.OnClickListener() {
-                                                        public void onClick(DialogInterface dialog, int id) {
-                                                            alertFlagOrange = 0;
-                                                            createAlertDescription();
-                                                        }
-                                                    });
+                                                    // Add RM to the arrayList
+                                                    colors.add("#ff0000");
+                                                    arrayList.add("RM - A"); // \n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer rmsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    rmsound.start();
 
+                                                } else if (alertDescription.contains("Tank B")){
 
-                                            orangeAlert = orangeAppAlert.create();
-                                            WindowManager.LayoutParams placement = orangeAlert.getWindow().getAttributes();
-                                            placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+                                                    // Add RM to the arrayList
+                                                    colors.add("#ff0000");
+                                                    arrayList.add("RM - B"); // \n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer rmsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    rmsound.start();
 
-                                            orangeAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_orange);
-
-                                            orangeAlert.setMessage("Medium Priority Alert Available\n(" + timer.getText() + ")");
-                                            alertFlagOrange = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
-
-                                            orangeAlert.setOnShowListener( new DialogInterface.OnShowListener() {
-                                                @Override
-                                                public void onShow(DialogInterface arg0) {
-                                                        orangeAlert.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE);
                                                 }
-                                            });
 
-                                            orangeAlert.show();
-                                            TextView textView = (TextView) orangeAlert.findViewById(android.R.id.message);
-                                            textView.setTextSize(20);
-                                            textView.setGravity(Gravity.CENTER_HORIZONTAL);
-                                            textView.setHeight(300);
-                                            textView.setWidth(300);
-                                            textView.setBackgroundResource(R.drawable.textview_orange);
+                                            } else if (alertDescription.contains("User Responded")) {
 
-                                            final Button positiveButton = orangeAlert.getButton(AlertDialog.BUTTON_POSITIVE);
-                                            LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
-                                            posParams.weight = 1;
-                                            posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-                                            posParams.height = 100;
-                                            posParams.gravity = Gravity.CENTER_HORIZONTAL;
-                                            positiveButton.setGravity(Gravity.CENTER);
-                                            positiveButton.setPadding(0,0,0,0);
+                                                if (alertDescription.contains("Tank A")){
 
-                                            alertDescription = payloadContent.substring(3, payloadContent.length());
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("RM - A");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Tank B")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("RM - B");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(SL)")) {
+
+                                            alertDescription = payloadContent.substring(4, payloadContent.length());
                                             alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Red")){
+
+                                                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                                    // progressPoints -= 5;
+                                                    arrayList.add("L - Red"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    lsound.start();
+
+                                                } else if (alertDescription.contains("Green")){
+
+                                                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                                    // progressPoints -= 5;
+                                                    arrayList.add("L - Green"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    lsound.start();
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Green")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Green");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Red")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Red");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                if (alertDescription.contains("Green")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Green");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Red")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Red");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+
+
+                                        } else if (payloadContent.startsWith("(SG)")) {
+
+                                            alertDescription = payloadContent.substring(4, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 1"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 2"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 3"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 4"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 1");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 2");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 3");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 4");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 1");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 2");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 3");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 4");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(ST)")) {
+
+                                            alertDescription = payloadContent.substring(4 , payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                                // progressPoints -= 5;
+                                                arrayList.add("T"); //\n(" + timer.getText() + ")");
+                                                adapter.notifyDataSetChanged();
+                                                // This works to play the recording when the message is displayed.
+                                                final MediaPlayer tsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                tsound.start();
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                // Remove the first occurance of RM from the arrayList
+                                                arrayList.remove("T");
+                                                adapter.notifyDataSetChanged();
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                // Remove the first occurance of RM from the arrayList
+                                                arrayList.remove("T");
+                                                adapter.notifyDataSetChanged();
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(RM)")) {  // Written and haptic feedback
+
+                                            alertDescription = payloadContent.substring(4, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Tank A")){
+
+                                                    colors.add("#ff0000");
+                                                    arrayList.add("RM - A"); // \n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                                                    redVib.vibrate(vibrateRM, -1);
+
+                                                } else if (alertDescription.contains("Tank B")){
+
+                                                    colors.add("#ff0000");
+                                                    arrayList.add("RM - B"); // \n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                                                    redVib.vibrate(vibrateRM, -1);
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Tank A")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("RM - A");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Tank B")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("RM - B");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
 
                                         } else if (payloadContent.startsWith("(L)")) {
-                                            colors.add("#FFFF00");
-                                            progressPoints -= 3;
-                                            arrayList.add("Low Priority Alert\n(" + timer.getText() + ")");
-                                            adapter.notifyDataSetChanged();
-
-                                            Vibrator yellowVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                                            yellowVib.vibrate(vibrateYellow, -1);
-
-
-                                            final AlertDialog.Builder yellowAppAlert = new AlertDialog.Builder(MainActivity.this);
-                                            yellowAppAlert.setPositiveButton(
-                                                    "OK",
-                                                    new DialogInterface.OnClickListener() {
-                                                        public void onClick(DialogInterface dialog, int id) {
-                                                            alertFlagYellow = 0;
-                                                            createAlertDescription();
-                                                        }
-                                                    });
-
-
-                                            yellowAlert = yellowAppAlert.create();
-                                            WindowManager.LayoutParams placement = yellowAlert.getWindow().getAttributes();
-                                            placement.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-
-                                            yellowAlert.getWindow().setBackgroundDrawableResource(R.drawable.textview_yellow);
-
-                                            yellowAlert.setMessage("Low Priority Alert Available\n(" + timer.getText() + ")");
-                                            alertFlagYellow = 1; // Alert is shown, set flag so that onSensorChange event knows to remove alert
-
-                                            yellowAlert.setOnShowListener( new DialogInterface.OnShowListener() {
-                                                @Override
-                                                public void onShow(DialogInterface arg0) {
-                                                    yellowAlert.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.BLACK);
-                                                }
-                                            });
-
-                                            yellowAlert.show();
-
-                                            TextView textView = (TextView) yellowAlert.findViewById(android.R.id.message);
-                                            textView.setTextSize(20);
-                                            textView.setGravity(Gravity.CENTER_HORIZONTAL);
-                                            textView.setHeight(300);
-                                            textView.setWidth(300);
-                                            textView.setBackgroundResource(R.drawable.textview_yellow);
-
-                                            final Button positiveButton = yellowAlert.getButton(AlertDialog.BUTTON_POSITIVE);
-                                            LinearLayout.LayoutParams posParams = (LinearLayout.LayoutParams) positiveButton.getLayoutParams();
-                                            posParams.weight = 1;
-                                            posParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-                                            posParams.height = 100;
-                                            posParams.gravity = Gravity.CENTER_HORIZONTAL;
-                                            positiveButton.setGravity(Gravity.CENTER);
-                                            positiveButton.setPadding(0,0,0,0);
 
                                             alertDescription = payloadContent.substring(3, payloadContent.length());
                                             alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Red")){
+
+                                                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                                    // progressPoints -= 5;
+                                                    arrayList.add("L - Red"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    lsound.start();
+
+                                                } else if (alertDescription.contains("Green")){
+
+                                                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                                    // progressPoints -= 5;
+                                                    arrayList.add("L - Green"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    lsound.start();
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Green")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Green");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Red")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Red");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                if (alertDescription.contains("Green")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Green");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Red")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Red");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(G)")) {
+
+                                            alertDescription = payloadContent.substring(3, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 1"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 2"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 3"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 4"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 1");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 2");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 3");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 4");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 1");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 2");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 3");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 4");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(T)")) {
+
+                                            alertDescription = payloadContent.substring(3, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                colors.add("#FF8C00");
+                                                arrayList.add("T"); // \n(" + timer.getText() + ")");
+                                                adapter.notifyDataSetChanged();
+                                                Vibrator tVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                tVib.vibrate(vibrateT, -1);
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                // Remove the first occurance of RM from the arrayList
+                                                arrayList.remove("T");
+                                                adapter.notifyDataSetChanged();
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                // Remove the first occurance of RM from the arrayList
+                                                arrayList.remove("T");
+                                                adapter.notifyDataSetChanged();
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(RMAll)")) {  // All feedback methods
+
+                                            alertDescription = payloadContent.substring(7, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Tank A")){
+
+                                                    colors.add("#ff0000");
+                                                    arrayList.add("RM - A"); // \n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                                                    redVib.vibrate(vibrateRM, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer rmsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    rmsound.start();
+
+                                                } else if (alertDescription.contains("Tank B")){
+
+                                                    colors.add("#ff0000");
+                                                    arrayList.add("RM - B"); // \n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
+                                                    redVib.vibrate(vibrateRM, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer rmsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    rmsound.start();
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Tank A")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("RM - A");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Tank B")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("RM - B");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(LAll)")) {
+
+                                            alertDescription = payloadContent.substring(6, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Red")){
+
+                                                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                                    // progressPoints -= 5;
+                                                    arrayList.add("L - Red"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator lVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    lVib.vibrate(vibrateL, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    lsound.start();
+
+                                                } else if (alertDescription.contains("Green")){
+
+                                                    colors.add("#FF8C00"); // value used by getView in arrayAdapter
+                                                    // progressPoints -= 5;
+                                                    arrayList.add("L - Green"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator lVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    lVib.vibrate(vibrateL, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    lsound.start();
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Green")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Green");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Red")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Red");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                if (alertDescription.contains("Green")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Green");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Red")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("L - Red");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(GAll)")) {
+
+                                            alertDescription = payloadContent.substring(6, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 1"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 2"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 3"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    colors.add("#FFFF00");
+                                                    //progressPoints -= 3;
+                                                    arrayList.add("G - 4"); //\n(" + timer.getText() + ")");
+                                                    adapter.notifyDataSetChanged();
+                                                    Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                    gVib.vibrate(vibrateG, -1);
+                                                    // This works to play the recording when the message is displayed.
+                                                    final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                    gsound.start();
+
+                                                }
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 1");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 2");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 3");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 4");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                if (alertDescription.contains("Gauge 1")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 1");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 2")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 2");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 3")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 3");
+                                                    adapter.notifyDataSetChanged();
+
+                                                } else if (alertDescription.contains("Gauge 4")){
+
+                                                    // Remove the first occurance of RM from the arrayList
+                                                    arrayList.remove("G - 4");
+                                                    adapter.notifyDataSetChanged();
+
+                                                }
+
+                                            }
+
+                                        } else if (payloadContent.startsWith("(TAll)")) {
+
+                                            alertDescription = payloadContent.substring(6, payloadContent.length());
+                                            alertDescriptionBank.add(alertDescription);
+
+                                            if (alertDescription.contains("Attend")){
+
+                                                colors.add("#FF8C00");
+                                                arrayList.add("T"); // \n(" + timer.getText() + ")");
+                                                adapter.notifyDataSetChanged();
+                                                Vibrator tVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                                tVib.vibrate(vibrateT, -1);
+                                                // This works to play the recording when the message is displayed.
+                                                final MediaPlayer tsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
+                                                tsound.start();
+
+                                            } else if (alertDescription.contains("User Responded")) {
+
+                                                // Remove the first occurance of RM from the arrayList
+                                                arrayList.remove("T");
+                                                adapter.notifyDataSetChanged();
+
+                                            } else if (alertDescription.contains("Timeout")) {
+
+                                                // Remove the first occurance of RM from the arrayList
+                                                arrayList.remove("T");
+                                                adapter.notifyDataSetChanged();
+
+                                            }
+
 
                                         } else if (payloadContent.startsWith("(UM)")) {
                                             alertDescription = payloadContent.substring(4, payloadContent.length());
@@ -529,11 +1094,7 @@ public class MainActivity extends AppCompatActivity{
                                             yellowVib.vibrate(vibrateMessageUpdate, -1);
                                             createAlertDescription();
                                         }
-                                        pointPercentage.setText(progressPoints + "%");
-                                        prg.setMax(100);
-                                        prg.setProgress(progressPoints);
-                                        Drawable draw = getResources().getDrawable(R.drawable.progress_custom);
-                                        prg.setProgressDrawable(draw);
+
                                         list = (ListView) findViewById(R.id.listEvents);
                                         list.setClickable(true);
                                         list.setAdapter(adapter);
