@@ -122,6 +122,41 @@ public class MainActivity extends AppCompatActivity{
 
     //************************************************ Activemq Setting **************************************************
 
+    public void alerttimer(ArrayList<String> arrayList, ArrayAdapter<String> adapter)
+    {
+        // check the time elapsed and if it is greater than certain threshold
+        // Change the text color to red, else remain it's default one
+        // alert_colors variable should be cleared for each iteration
+        // because the length of it will be forever go on increasing
+        alert_colors.clear();
+        // For every event check whether it is elapsed or not
+        for (int i=0; i < arrayList.size(); i++)
+        {
+            // get the duration of elapse to the variable event_elapsed
+            // eventtimer is a hashmap which maps the eventname -> starttime
+            // eventtimer will have the eventname equal to arraylist
+            // divided by 1000 is to get the value in seconds
+            Long event_elapsed = (SystemClock.elapsedRealtime() - eventtimer.get(arrayList.get(i)))/1000;
+            // the threshold
+            if (event_elapsed > 17) {
+                // add the red color to alert_colors will be used at getview function
+                alert_colors.add("#FF0000");
+                // flag for there is a change in the vire
+                event_changed = true;
+            }
+            else
+                // color for grey which is default if the event is not lapsed
+                alert_colors.add("#DCDCDC");
+
+        }
+        // when there is a change in the event, adapter should be notified
+        if (event_changed) {
+            adapter.notifyDataSetChanged();
+            // change the flag to false
+            event_changed = false;
+        }
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -346,38 +381,8 @@ public class MainActivity extends AppCompatActivity{
 
                                 try {
 
-                                    // check the time elapsed and if it is greater than certain threshold
-                                    // Change the text color to red, else remain it's default one
-                                    // alert_colors variable should be cleared for each iteration
-                                    // because the length of it will be forever go on increasing
-                                    alert_colors.clear();
-                                    // For every event check whether it is elapsed or not
-                                    for (int i=0; i < arrayList.size(); i++)
-                                    {
-                                        // get the duration of elapse to the variable event_elapsed
-                                        // eventtimer is a hashmap which maps the eventname -> starttime
-                                        // eventtimer will have the eventname equal to arraylist
-                                        // divided by 1000 is to get the value in seconds
-                                        Long event_elapsed = (SystemClock.elapsedRealtime() - eventtimer.get(arrayList.get(i)))/1000;
-                                        // the threshold
-                                        if (event_elapsed > 17) {
-                                            // add the red color to alert_colors will be used at getview function
-                                            alert_colors.add("#FF0000");
-                                            // flag for there is a change in the vire
-                                            event_changed = true;
-                                        }
-                                        else
-                                            // color for grey which is default if the event is not lapsed
-                                            alert_colors.add("#DCDCDC");
-
-                                    }
-                                    // when there is a change in the event, adapter should be notified
-                                    if (event_changed) {
-                                        adapter.notifyDataSetChanged();
-                                        // change the flag to false
-                                        event_changed = false;
-                                    }
-
+                                    // Function call for the row to turn red
+                                    alerttimer(arrayList, adapter);
 
                                     if (!payloadQueue.isEmpty()) {
                                         String payloadContent = payloadQueue.removeFirst().toString();
@@ -406,10 +411,13 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#ff0000");
                                                     arrayList.add("RM - A"); // \n(" + timer.getText() + ")");
 
-                                                    adapter.notifyDataSetChanged();
                                                     // Add the current time to the eventtimer
                                                     // map the eventname with the time started
                                                     eventtimer.put("RM - A", SystemClock.elapsedRealtime());
+                                                    // just to get the colors updated
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer rmsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     rmsound.start();
@@ -419,9 +427,12 @@ public class MainActivity extends AppCompatActivity{
                                                     // Add RM to the arrayList
                                                     colors.add("#ff0000");
                                                     arrayList.add("RM - B"); // \n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("RM - B", SystemClock.elapsedRealtime());
+                                                    // just to get the colors updated
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer rmsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     rmsound.start();
@@ -434,17 +445,20 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("RM - A");
-                                                    adapter.notifyDataSetChanged();
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("RM - A");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Tank B")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("RM - B");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("RM - B");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -462,9 +476,10 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FF8C00"); // value used by getView in arrayAdapter
                                                     // progressPoints -= 5;
                                                     arrayList.add("L - Red"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("L - Red", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     lsound.start();
@@ -476,6 +491,7 @@ public class MainActivity extends AppCompatActivity{
                                                     arrayList.add("L - Green"); //\n(" + timer.getText() + ")");
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("L - Green", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
                                                     adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
@@ -489,18 +505,22 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Green");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Green");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
 
                                                 } else if (alertDescription.contains("Red")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Red");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Red");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -510,17 +530,21 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Green");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Green");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Red")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Red");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Red");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -540,9 +564,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 1"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 1", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     gsound.start();
@@ -552,9 +578,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 2"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 2", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     gsound.start();
@@ -564,9 +592,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 3"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 3", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     gsound.start();
@@ -576,9 +606,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 4"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 4", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer gsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     gsound.start();
@@ -591,33 +623,42 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 1");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 1");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 2")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 2");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 2");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Gauge 3")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 3");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 3");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 4")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 4");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 4");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -627,33 +668,41 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 1");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 1");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 2")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 2");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 2");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 3")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 3");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 3");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 4")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 4");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 4");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -669,9 +718,12 @@ public class MainActivity extends AppCompatActivity{
                                                 colors.add("#FF8C00"); // value used by getView in arrayAdapter
                                                 // progressPoints -= 5;
                                                 arrayList.add("T"); //\n(" + timer.getText() + ")");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Add the current time to the eventtimer
                                                 eventtimer.put("T", SystemClock.elapsedRealtime());
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
+
                                                 // This works to play the recording when the message is displayed.
                                                 final MediaPlayer tsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                 tsound.start();
@@ -680,17 +732,21 @@ public class MainActivity extends AppCompatActivity{
 
                                                 // Remove the first occurance of RM from the arrayList
                                                 arrayList.remove("T");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Remove the created time from the eventtimer
                                                 eventtimer.remove("T");
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
 
                                             } else if (alertDescription.contains("Timeout")) {
 
                                                 // Remove the first occurance of RM from the arrayList
                                                 arrayList.remove("T");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Remove the created time from the eventtimer
                                                 eventtimer.remove("T");
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
 
                                             }
 
@@ -705,9 +761,12 @@ public class MainActivity extends AppCompatActivity{
 
                                                     colors.add("#ff0000");
                                                     arrayList.add("RM - A"); // \n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("RM - A", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
                                                     Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
                                                     redVib.vibrate(vibrateRM, -1);
 
@@ -715,9 +774,11 @@ public class MainActivity extends AppCompatActivity{
 
                                                     colors.add("#ff0000");
                                                     arrayList.add("RM - B"); // \n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("RM - B", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
                                                     redVib.vibrate(vibrateRM, -1);
 
@@ -729,17 +790,22 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("RM - A");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("RM- A");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Tank B")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("RM - B");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("RM - B");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -757,9 +823,12 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FF8C00"); // value used by getView in arrayAdapter
                                                     // progressPoints -= 5;
                                                     arrayList.add("L - Red"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("L - Red", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     lsound.start();
@@ -769,9 +838,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FF8C00"); // value used by getView in arrayAdapter
                                                     // progressPoints -= 5;
                                                     arrayList.add("L - Green"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("L - Green", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     // This works to play the recording when the message is displayed.
                                                     final MediaPlayer lsound = MediaPlayer.create(MainActivity.this, R.raw.recording);
                                                     lsound.start();
@@ -784,17 +855,21 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Green");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Green");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Red")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Red");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Red");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -804,17 +879,22 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Green");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Green");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Red")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Red");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Red");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -832,9 +912,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 1"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 1", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
 
@@ -843,9 +925,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 2"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 2", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
 
@@ -854,9 +938,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 3"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 3", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
 
@@ -865,9 +951,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 4"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 4", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
 
@@ -879,33 +967,41 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 1");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 1");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 2")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 2");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 2");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 3")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 3");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 3");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 4")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 4");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 4");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -915,36 +1011,45 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 1");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 1");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 2")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 2");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 2");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 3")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 3");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 3");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Gauge 4")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 4");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 4");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -959,9 +1064,12 @@ public class MainActivity extends AppCompatActivity{
 
                                                 colors.add("#FF8C00");
                                                 arrayList.add("T"); // \n(" + timer.getText() + ")");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Add the current time to the eventtimer
                                                 eventtimer.put("T", SystemClock.elapsedRealtime());
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
+
                                                 Vibrator tVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                 tVib.vibrate(vibrateT, -1);
 
@@ -969,17 +1077,21 @@ public class MainActivity extends AppCompatActivity{
 
                                                 // Remove the first occurance of RM from the arrayList
                                                 arrayList.remove("T");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Remove the created time from the eventtimer
                                                 eventtimer.remove("T");
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
 
                                             } else if (alertDescription.contains("Timeout")) {
 
                                                 // Remove the first occurance of RM from the arrayList
                                                 arrayList.remove("T");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Remove the created time from the eventtimer
                                                 eventtimer.remove("T");
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
 
                                             }
 
@@ -994,9 +1106,11 @@ public class MainActivity extends AppCompatActivity{
 
                                                     colors.add("#ff0000");
                                                     arrayList.add("RM - A"); // \n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("RM - A", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
                                                     redVib.vibrate(vibrateRM, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1007,9 +1121,11 @@ public class MainActivity extends AppCompatActivity{
 
                                                     colors.add("#ff0000");
                                                     arrayList.add("RM - B"); // \n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("RM - B", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator redVib = (Vibrator) getApplicationContext().getSystemService(Context.VIBRATOR_SERVICE);
                                                     redVib.vibrate(vibrateRM, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1024,17 +1140,21 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("RM - A");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("RM - A");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Tank B")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("RM - B");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("RM - B");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -1052,9 +1172,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FF8C00"); // value used by getView in arrayAdapter
                                                     // progressPoints -= 5;
                                                     arrayList.add("L - Red"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("L - Red", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator lVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     lVib.vibrate(vibrateL, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1066,9 +1188,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FF8C00"); // value used by getView in arrayAdapter
                                                     // progressPoints -= 5;
                                                     arrayList.add("L - Green"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("L - Green", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator lVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     lVib.vibrate(vibrateL, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1083,17 +1207,22 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Green");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Green");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Red")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Red");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Red");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -1103,17 +1232,22 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Green");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Green");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Red")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("L - Red");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("L - Red");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -1131,9 +1265,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 1"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 1", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1145,9 +1281,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 2"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 2", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1159,9 +1297,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 3"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 3", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1173,9 +1313,11 @@ public class MainActivity extends AppCompatActivity{
                                                     colors.add("#FFFF00");
                                                     //progressPoints -= 3;
                                                     arrayList.add("G - 4"); //\n(" + timer.getText() + ")");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Add the current time to the eventtimer
                                                     eventtimer.put("G - 4", SystemClock.elapsedRealtime());
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
                                                     Vibrator gVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                     gVib.vibrate(vibrateG, -1);
                                                     // This works to play the recording when the message is displayed.
@@ -1190,33 +1332,43 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 1");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 1");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Gauge 2")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 2");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 2");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 3")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 3");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 3");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
+
 
                                                 } else if (alertDescription.contains("Gauge 4")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 4");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 4");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -1226,33 +1378,41 @@ public class MainActivity extends AppCompatActivity{
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 1");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 1");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 2")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 2");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 2");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 3")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 3");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 3");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 } else if (alertDescription.contains("Gauge 4")){
 
                                                     // Remove the first occurance of RM from the arrayList
                                                     arrayList.remove("G - 4");
-                                                    adapter.notifyDataSetChanged();
+
                                                     // Remove the created time from the eventtimer
                                                     eventtimer.remove("G - 4");
+                                                    alerttimer(arrayList, adapter);
+                                                    adapter.notifyDataSetChanged();
 
                                                 }
 
@@ -1267,9 +1427,11 @@ public class MainActivity extends AppCompatActivity{
 
                                                 colors.add("#FF8C00");
                                                 arrayList.add("T"); // \n(" + timer.getText() + ")");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Add the current time to the eventtimer
                                                 eventtimer.put("T", SystemClock.elapsedRealtime());
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
                                                 Vibrator tVib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                                 tVib.vibrate(vibrateT, -1);
                                                 // This works to play the recording when the message is displayed.
@@ -1280,17 +1442,21 @@ public class MainActivity extends AppCompatActivity{
 
                                                 // Remove the first occurance of RM from the arrayList
                                                 arrayList.remove("T");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Remove the created time from the eventtimer
                                                 eventtimer.remove("T");
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
 
                                             } else if (alertDescription.contains("Timeout")) {
 
                                                 // Remove the first occurance of RM from the arrayList
                                                 arrayList.remove("T");
-                                                adapter.notifyDataSetChanged();
+
                                                 // Remove the created time from the eventtimer
                                                 eventtimer.remove("T");
+                                                alerttimer(arrayList, adapter);
+                                                adapter.notifyDataSetChanged();
 
                                             }
 
