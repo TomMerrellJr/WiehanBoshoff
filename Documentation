@@ -1,0 +1,77 @@
+Wearable Augmented Device Documentation
+
+********************************************************************************
+Special Thanks to Wiehan Boshoff for developing the initial version of these
+applications.
+********************************************************************************
+
+Purpose - The purpose of this android application is to provide visual and
+haptic feedback during remotely piloted aircraft (RPA) training scenarios.
+
+Details - This application makes use of the fusesource mqtt library in order to
+establish a connection with Apache ActiveMQ web message broker. The user must
+have both an android mobile device as well as an android wear device.
+
+Loading the application to the devices - In order to load the mobile
+application to the mobile device you must have Android Studio installed on your
+computer.
+  1.  Clone this repository to your computer.
+  2.  Use Android Studio to open the repository.
+  3.  Ensure that your mobile device is in developer mode.
+    3.1.  If you need to put your device in dev. mode:
+      *   Open the settings application
+      *   Select the System option
+      *   Find About Phone
+      *   Click the build number 7 times
+  4.  Ensure that the Wear device is also in developer mode and connected via
+      bluetooth to the mobile device.
+  5.  Plug the mobile device into your computer via USB.
+  6.  Make sure to Enable USB Debugging in the developer options of the mobile
+      device.
+  7.  Make sure to Enable bluetooth debugging on the wear device.
+  8.  In Android Studio select the mobile program in the droplist at the top of
+      the screen.
+  9.  Click run
+  10. Select the target device from the list.
+    10.1.  This will install the application to the mobile device.
+  11. Now select wear from the droplist and click run
+    11.1.   This will install the application to the wear device.
+
+
+In order to use the application ensure that Apache ActiveMQ is running. Open the
+mobile application and enter the IPv4 address and press OK. This will connect
+the phone to the "MCITOPIC" topic in ActiveMQ. Verify that the phone is
+connected in the ActiveMQ Web App. Once the phone is connected then open the
+application on the wear device.
+
+********************************************************************************
+NOTE: Make sure that the mobile device is also connected to the same wifi as the
+machine that is running ActiveMQ, otherwise the connection will not work.
+********************************************************************************
+
+The application code is commented so that it is easy to determine what the
+different sections of the code are intended to do.
+
+If there are any questions about the fusesource mqtt client please see:
+https://github.com/fusesource/mqtt-client
+
+The above link will take you to the documentation for the mqtt client used to
+connect to the Apache ActiveMQ broker. There is sample code available for use,
+as well as detailed explanation of the different tools.
+
+Currently the mobile application is identified as WADClient, and only subscribes
+to the MCITOPIC topic.
+
+In order to incorporate the mental workload and the relevant messages given the
+task/skill(s) pair and performance an external connector is used. This connector
+reads the output from the FuSE^2 system as well as the output of mioda.
+
+Using the mental workload to determine which alerts are able to be displayed:
+
+Workload <= 33: all alerts can be sent since user workload is "Low"
+
+33 < Workload <= 67: Only High and Medium priority alerts can be sent since
+                      workload is "Moderate".
+
+67 < Workload: Only High priority alerts are able to be sent, since the user
+                is in a state of "High" workload.
